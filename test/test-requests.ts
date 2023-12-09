@@ -6,7 +6,7 @@ const actionSchemaType = {
   type: "String",
   from: "String",
   to: "String",
-  amount: "Uint",
+  amount: "String",
   nonce: "Uint",
 };
 
@@ -14,14 +14,14 @@ const actionInput = new ActionSchema("update-keeper", actionSchemaType);
 
 const getData = async (nonce: number) => {
   const wallet = new ethers.Wallet(
-    "9833eb6296efad8ca93aad767da40b7eb240511ccf9b8346ef8d1f82e30638bd"
+    "5af06e43a75c9b82bb469f050a882f33aa9d628453cd2d2f31d0ca822e38cc6f"
   );
 
   const data = {
-    type: "mint",
+    type: "burn",
     from: wallet.address,
-    to: "",
-    amount: 20,
+    to: "0x979955aD4c50F5800EcA3B598dB60fE6A39C4e8C",
+    amount: "1000000000000",
     nonce: nonce,
   };
 
@@ -49,13 +49,15 @@ const run = async () => {
   const start = Date.now();
   const payload = await getData(start);
 
-  // const res = await fetch("http://localhost:3000/", {
-  //   method: "POST",
-  //   body: payload,
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //   },
-  // });
+  const res = await fetch("http://localhost:3000/burn", {
+    method: "POST",
+    body: payload,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  console.log(res);
 
   // const end = Date.now();
 

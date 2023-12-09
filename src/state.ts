@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 
 export type StateVariable = {
   address: string;
-  balance: number;
+  balance: string;
 }[];
 
 interface StateTransport {
@@ -11,10 +11,10 @@ interface StateTransport {
 }
 
 export interface KeeperActionInput {
-  type: "mint" | "burn" | "transfer";
+  type: "mint" | "burn";
   from: string;
   to?: string;
-  amount?: number;
+  amount?: string;
   nonce: number;
 }
 
@@ -47,10 +47,13 @@ export const keeperSTF: STF<KeeperNetwork, KeeperActionInput> = {
     let senderIndex = newState.findIndex(
       (account) => account.address === inputs.from
     );
+    let receiverIndex = newState.findIndex(
+      (account) => account.address === inputs.to
+    );
     if (senderIndex === -1) {
       newState.push({
         address: inputs.from,
-        balance: 0,
+        balance: "0",
       });
       senderIndex = newState.findIndex(
         (account) => account.address === inputs.from
@@ -58,30 +61,27 @@ export const keeperSTF: STF<KeeperNetwork, KeeperActionInput> = {
     }
     switch (inputs.type) {
       case "mint":
-        newState[senderIndex].balance += inputs.amount!;
+        if (receiverIndex === -1) {
+          newState.push({
+            address: inputs.to!,
+            balance: "0",
+          });
+          receiverIndex = newState.findIndex(
+            (account) => account.address === inputs.to
+          );
+        }
+        newState[receiverIndex].balance = (
+          BigInt(newState[receiverIndex].balance) + BigInt(inputs.amount!)
+        ).toString();
         break;
       case "burn":
-        newState[senderIndex].balance -= inputs.amount!;
-        break;
-      case "transfer":
-        const receiverIndex = newState.findIndex(
-          (account) => account.address === inputs.to
-        );
-        if (receiverIndex === -1) {
-          throw new Error("Reciever account not found");
-        }
-        if (newState[senderIndex].balance < inputs.amount!) {
+        if (BigInt(newState[senderIndex].balance) < BigInt(inputs.amount!)) {
           throw new Error("Insufficient balance");
         }
-        newState[senderIndex].balance -= inputs.amount!;
-        newState[receiverIndex].balance += inputs.amount!;
+        newState[senderIndex].balance = (
+          BigInt(newState[senderIndex].balance) - BigInt(inputs.amount!)
+        ).toString();
         break;
-      // case "createAccount":
-      //   newState.push({
-      //     address: inputs.from,
-      //     balance: 0,
-      //   });
-      //   break;
     }
     state.transport.allAccounts = newState;
   },
